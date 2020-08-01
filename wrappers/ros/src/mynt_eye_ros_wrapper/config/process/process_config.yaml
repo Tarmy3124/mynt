@@ -1,7 +1,7 @@
 # disparity computing method type
 # sgbm: 0
 # bm: 1
-disparity_computing_method: 1
+disparity_computing_method: 0
 
 enable_left_rect: false
 enable_right_rect: false

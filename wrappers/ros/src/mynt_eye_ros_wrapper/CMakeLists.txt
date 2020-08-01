@@ -43,6 +43,10 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  #pcl
+  pcl_conversions
+  #pcl_msgs
+  pcl_ros
 )
 
 checkPackage("cv_bridge" "")

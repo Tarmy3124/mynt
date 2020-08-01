@@ -14,6 +14,18 @@
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
 
+//tarmy_filter
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/filters/radius_outlier_removal.h>
+#include <pcl/filters/conditional_removal.h>
+
+#include <pcl/filters/passthrough.h>
+
+
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/Imu.h>
@@ -41,6 +53,8 @@
 #include "mynteye/device/device.h"
 #define CONFIGURU_IMPLEMENTATION 1
 #include "configuru.hpp"
+
+
 using namespace configuru;  // NOLINT
 
 #define PIE 3.1416
@@ -955,10 +969,13 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
     for (std::size_t y = 0; y < in->height; ++y) {
       for (std::size_t x = 0; x < in->width; ++x) {
         auto &&point = data.frame.at<cv::Vec3f>(y, x);
-
-        *iter_x = point[2] * 0.001;
+//x y z
+        //if(point[2]<3500)
+        *iter_x = point[2] * 0.001;       
         *iter_y = 0.f - point[0] * 0.001;
-        *iter_z = 0.f - point[1] * 0.001;
+        *iter_z = point[1] * 0.001;
+        //ROS_INFO("x: [%f]", *iter_x);
+
 
         *iter_r = static_cast<uint8_t>(255);
         *iter_g = static_cast<uint8_t>(255);
@@ -972,8 +989,55 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
         ++iter_b;
       }
     }
+/*	// Container for original & filtered data
+	 pcl::PCLPointCloud2* cloud = new pcl::PCLPointCloud2; 
+	
+	  pcl::PCLPointCloud2ConstPtr cloudPtr(cloud);
+	  pcl::PCLPointCloud2 cloud_filtered;
+	 
+	  // Convert to PCL data type
+	  pcl_conversions::toPCL(msg, *cloud);
+	 
+	  // Perform the actual filtering
+	    pcl::RadiusOutlierRemoval<pcl::PCLPointCloud2> outrem;
+	     // build the filter  
+	    outrem.setInputCloud(cloudPtr);
+	    outrem.setRadiusSearch(0.08);
+	    outrem.setMinNeighborsInRadius (60);
+	     // apply filter
+	    outrem.filter (cloud_filtered);
+	 
+	  // Convert to ROS data type
+	  sensor_msgs::PointCloud2 cloud_rad;
+	  pcl_conversions::moveFromPCL(cloud_filtered, cloud_rad); */
 
-    points_publisher_.publish(msg);
+ // Container for original & filtered data
+  pcl::PCLPointCloud2* cloud = new pcl::PCLPointCloud2; 
+  pcl::PCLPointCloud2ConstPtr cloudPtr(cloud);
+  pcl::PCLPointCloud2 cloud_filtered;
+ 
+  // Convert to PCL data type
+  pcl_conversions::toPCL(msg, *cloud);
+ 
+  // Perform the actual filtering
+  pcl::PassThrough<pcl::PCLPointCloud2> pass;
+    // build the filter
+  pass.setInputCloud (cloudPtr);
+  pass.setFilterFieldName ("z");
+  pass.setFilterLimits (-0.9, 0.5);
+  pass.setFilterFieldName ("x");
+  pass.setFilterLimits (-2.5, 3);
+ // pass.setFilterFieldName ("y");
+ // pass.setFilterLimits (-1.2,1.2 );
+    // apply filter
+  pass.filter (cloud_filtered);
+ 
+  // Convert to ROS data type
+  sensor_msgs::PointCloud2 cloud_pt;
+  pcl_conversions::moveFromPCL(cloud_filtered, cloud_pt);
+
+
+    points_publisher_.publish(cloud_pt);
   }
 
   void publishImu(
