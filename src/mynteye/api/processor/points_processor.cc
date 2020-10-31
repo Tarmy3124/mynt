@@ -98,11 +98,11 @@ bool PointsProcessor::OnProcess(
 
   int height = static_cast<int>(output->value.rows);
   int width = static_cast<int>(output->value.cols);
+  //std::cout<<"centerx:"<<center_x<<"\ny:"<<center_y<<"const_x:"<<constant_x<<"\nconsty"<<constant_y<<std::endl;
   for (int v = 0; v < height; ++v) {
     cv::Vec3f *dptr = output->value.ptr<cv::Vec3f>(v);
     for (int u = 0; u < width; ++u) {
       float depth = input->value.at<uint16_t>(v, u);
-
       // Missing points denoted by NaNs
       if (!DepthTraits<uint16_t>::valid(depth)) {
         dptr[u][0] = 0;
@@ -113,6 +113,7 @@ bool PointsProcessor::OnProcess(
       dptr[u][0] = (u - center_x) * depth * constant_x ;
       dptr[u][1] = (v - center_y) * depth * constant_y ;
       dptr[u][2] = depth ;
+    //  std::cout<<depth<<std::endl;
     }
   }
   output->id = input->id;

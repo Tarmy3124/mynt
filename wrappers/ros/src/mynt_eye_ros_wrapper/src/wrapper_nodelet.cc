@@ -13,7 +13,7 @@
 // limitations under the License.
 #include <nodelet/nodelet.h>
 #include <ros/ros.h>
-
+#include <stdlib.h>
 //tarmy_filter
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
@@ -37,6 +37,8 @@
 #include <visualization_msgs/Marker.h>
 #include <tf/tf.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+
+#include <sensor_msgs/LaserScan.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
 
@@ -466,9 +468,12 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
 
     publishStaticTransforms();
     //ros::Rate loop_rate(frame_rate_);
-    ros::Rate loop_rate(10);
+    //fsb subscribe leshi scan topic 
+    ros::Subscriber sub = nh_.subscribe("/scan", 10, &ROSWrapperNodelet::laserCallback, this);
+    ros::Rate loop_rate(30);
     while (private_nh_.ok()) {
       publishTopics();
+      ros::spinOnce();
       loop_rate.sleep();
     }
   }
@@ -722,6 +727,7 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
               // ros::Time stamp = hardTimeToSoftTime(data.img->timestamp);
               ros::Time stamp = checkUpTimeStamp(
                   data.img->timestamp, Stream::LEFT);
+             
               if (skip_tag > 0) {
                 if (skip_tmp_left_tag == 0) {
                   skip_tmp_left_tag = skip_tag;
@@ -817,7 +823,15 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
     if (!is_motion_published_) {
       api_->SetMotionCallback([this](const api::MotionData &data) {
       ros::Time stamp = checkUpImuTimeStamp(data.imu->timestamp);
-
+      ros::Time imu_time =stamp;
+      //fsb get delt
+     if(leshi_time.sec!=0){
+      ros::Time delt_ab;
+      delt_ab.sec=leshi_time.sec-imu_time.sec;
+     //std::cout<<" delt_ab.sec"<< delt_ab.sec<<std::endl;
+     // if (delt_ab.sec>1||delt_ab.sec<-1)imu_time.sec=imu_time.sec+delt_ab.sec;
+     //std::cout<<"stamp.sec=stamp.sec+delt_ab"<<imu_time.sec<<std::endl;
+     }
       // static double imu_time_prev = -1;
       // NODELET_INFO_STREAM("ros_time_beg: " << FULL_PRECISION << ros_time_beg
       //     << ", imu_time_elapsed: " << FULL_PRECISION
@@ -837,14 +851,14 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
               imu_gyro_ = data.imu;
               publishImuBySync();
             } else {
-              publishImu(data, imu_count_, stamp);
+              publishImu(data, imu_count_, imu_time);
               publishTemperature(data.imu->temperature, imu_count_, stamp);
             }
           } else {
             NODELET_WARN_STREAM("Motion data is empty");
           }
         } else {
-          publishImu(data, imu_count_, stamp);
+          publishImu(data, imu_count_, imu_time);
           publishTemperature(data.imu->temperature, imu_count_, stamp);
         }
         NODELET_DEBUG_STREAM(
@@ -915,7 +929,17 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
     image_publishers_[stream].publish(msg);
   }
   */
+// fsb leshi lasercallback ,get ab_delt
+//https://www.pianshen.com/article/2590374659/
+void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+   
+   
 
+    std::cout<<"leshi header.stamp"<<msg->header.stamp<<" ";
+    leshi_time=msg->header.stamp;
+    std::cout<<"----------------------------\n";
+}
   void publishMono(
       const Stream &stream, const api::StreamData &data, std::uint32_t seq,
       ros::Time stamp) {
@@ -1777,7 +1801,11 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
   std::map<Stream, bool> is_published_;
   bool is_motion_published_;
   bool is_started_;
+
   int frame_rate_;
+   //fsb  time of leshi - time of
+//time 定义 https://blog.csdn.net/u013834525/article/details/83863992 
+  ros::Time ab_delt,leshi_time;
   bool is_intrinsics_enable_;
   std::vector<ImuData> imu_align_;
   int skip_tag;
