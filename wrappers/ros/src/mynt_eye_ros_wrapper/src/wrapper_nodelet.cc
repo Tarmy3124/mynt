@@ -661,7 +661,7 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
     if (stream == Stream::LEFT || stream == Stream::RIGHT) {
       return;
     } else if (stream == Stream::POINTS) {
-      publishPoints(data, seq, stamp);
+      //publishPoints(data, seq, stamp);
     } else if (stream == Stream::LEFT_RECTIFIED ||
         stream == Stream::RIGHT_RECTIFIED) {
       publishMono(stream, data, seq, stamp);
