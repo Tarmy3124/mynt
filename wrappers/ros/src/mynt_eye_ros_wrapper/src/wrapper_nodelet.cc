@@ -817,7 +817,7 @@ class ROSWrapperNodelet : public nodelet::Nodelet {
         Stream::POINTS,         Stream::DEPTH
         };
     for (auto &&stream : other_streams) {
-      publishOthers(stream);
+    //  publishOthers(stream);
     }
 
     if (!is_motion_published_) {
