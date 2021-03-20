@@ -208,7 +208,7 @@ bool DisparityProcessor::OnProcess(
 #endif
   disparity.convertTo(output->value, CV_32F, 1./16, cx1_minus_cx2_);
   output->id = input->first_id;
-  output->data = input->first_data;
+  //output->data = input->first_data;
   return true;
 }
 
